@@ -39,38 +39,45 @@ export default function App() {
     const [type, setType] = useState(CameraType.back);
     const [permission, requestPermission] = Camera.useCameraPermissions();
     const [isCameraOpen, setIsCameraOpen] = useState(false);
+
     function toggleCameraType() {
         setType(current => (current === CameraType.back ? CameraType.front : CameraType.back));
     }
 
     const handlePress = useCallback(function (val) {
-        if(['+', '-', '*', '/', '%'].includes(calculate[calculate.length - 1]) && ['+', '-', '*', '/', '%'].includes(val)) {
-            return
-        }
-        setCalculate((cal => [...cal,val]))
-    },[])
+        setCalculate((cal => {
+            if (['+', '-', '*', '/', '%'].includes(cal[cal.length - 1]) && ['+', '-', '*', '/', '%'].includes(val)) {
+                return cal
+            }
+            return [...cal, val]
+        }))
+    }, [])
 
-    const handleCalculate = function () {
-        const  cal = [...calculate]
+    const handleCalculate = useCallback(function (calculate) {
+        const cal = [...calculate]
         const check = ['+', '-', '*', '/', '%'].includes(cal[calculate.length - 1])
-        if(check) {
+        if (check) {
             cal.splice(cal.length - 1, 1)
         }
         const sum = new Function(`return ${cal.join('')}`)
         setResult(sum())
-    }
+    }, [])
 
     const cameraRef = useRef(null);
 
-    const handleRemove = function () {
+    const handleRemove = useCallback(function () {
         const result = [...calculate].slice(0, -1)
+        if (!result.length) {
+            setResult('')
+        }
         setCalculate(result)
-    }
+        handleCalculate(result)
+    }, [calculate])
 
-    const handleAc = function () {
+    const handleAc = useCallback(function () {
         setCalculate([])
         setResult('')
-    }
+    }, [])
 
     if (!permission) {
         return null
@@ -148,7 +155,7 @@ export default function App() {
                             <KeyButton handlePress={handlePress} n={'.'} />
                             <KeyButton handlePress={handlePress} n={0} />
                             <KeyButton handlePress={handleRemove} n={<FontAwesome5 name="backspace" size={20} color="#48cae4" />} color='#48cae4' />
-                            <KeyButton handlePress={handleCalculate} color='#48cae4' n={'='} />
+                            <KeyButton handlePress={() => handleCalculate(calculate)} color='#48cae4' n={'='} />
                         </View>
                     </View>
                 </View>
@@ -175,7 +182,6 @@ const styles = StyleSheet.create({
         display: 'flex',
         flexDirection: 'row',
         backgroundColor: 'transparent',
-        // backgroundColor:'red'
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingVertical: 50,
