@@ -53,7 +53,7 @@ export default function App() {
         }))
     }, [])
 
-    const handleCalculate = useCallback(function (calculate) {
+    const handleCalculate = useCallback(function () {
         const cal = [...calculate]
         const check = ['+', '-', '*', '/', '%'].includes(cal[calculate.length - 1])
         if (check) {
@@ -61,7 +61,7 @@ export default function App() {
         }
         const sum = new Function(`return ${cal.join('')}`)
         setResult(sum())
-    }, [])
+    }, [calculate])
 
     const cameraRef = useRef(null);
 
@@ -71,7 +71,6 @@ export default function App() {
             setResult('')
         }
         setCalculate(result)
-        handleCalculate(result)
     }, [calculate])
 
     const handleAc = useCallback(function () {
@@ -155,7 +154,7 @@ export default function App() {
                             <KeyButton handlePress={handlePress} n={'.'} />
                             <KeyButton handlePress={handlePress} n={0} />
                             <KeyButton handlePress={handleRemove} n={<FontAwesome5 name="backspace" size={20} color="#48cae4" />} color='#48cae4' />
-                            <KeyButton handlePress={() => handleCalculate(calculate)} color='#48cae4' n={'='} />
+                            <KeyButton handlePress={handleCalculate} color='#48cae4' n={'='} />
                         </View>
                     </View>
                 </View>
