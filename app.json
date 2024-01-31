@@ -21,7 +21,12 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.wyl.calc"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -29,10 +34,17 @@
     "plugins": [
       [
         "expo-camera",
+        "expo-image-picker",
         {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera."
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera.",
+          "photosPermission": "The app accesses your photos to let you share them with your friends."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "6683e932-7279-424c-9b52-c1d137656edd"
+      }
+    }
   }
 }

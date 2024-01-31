@@ -6,6 +6,7 @@ import { Camera, CameraType } from 'expo-camera';
 import { Feather } from '@expo/vector-icons';
 import { Entypo } from '@expo/vector-icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 
 
 const KeyButton = memo(function ({
@@ -16,7 +17,7 @@ const KeyButton = memo(function ({
     backgroundColor = 'white'
 }) {
     return <View style={styles.keyButton}>
-        <TouchableOpacity onPress={() =>  handlePress(n)} style={{
+        <TouchableOpacity onPress={() => handlePress(n)} style={{
             height: 70,
             display: 'flex',
             justifyContent: 'center',
@@ -47,6 +48,22 @@ export default function App() {
     const [inputValue, setInputValue] = useState('')
     const [selection, setSelection] = useState({ start: 0, end: 0 })
     const inputRef = useRef(null);
+
+
+    const pickImage = async() => {
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.All,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+          });
+      
+          console.log(result);
+      
+          if (!result.canceled) {
+              console.log(result.assets[0].uri)
+          }
+    }
 
     const handlePress = useCallback(function (val) {
         const newInput = inputValue.substring(0, selection.start) + val + inputValue.substring(selection.start);
@@ -131,7 +148,6 @@ export default function App() {
     };
 
     if (!permission.granted) {
-        // Camera permissions are not granted yet
         return (
             <View style={[styles.container, { marginTop: DeviceStatusBar.currentHeight || 0 }]}>
                 <Text style={{ textAlign: 'center' }}>We need your permission to show the camera</Text>
@@ -143,7 +159,6 @@ export default function App() {
     const takePicture = async () => {
         if (cameraRef) {
             const photo = await cameraRef.current.takePictureAsync()
-            console.log(photo)
         }
     }
 
@@ -188,10 +203,10 @@ export default function App() {
                             <Text style={{ color: 'gray', fontSize: 60, textAlign: 'right' }}>{result}</Text>
                         </View>
                         <View style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: 'row' }}>
-                            <KeyButton handlePress={toggleCamera} n={'AI'} color='#FF0000' />
-                            <KeyButton handlePress={handleAc} n={'C'} color='#0000FF' />
-                            <KeyButton handlePress={handlePress} n={'√'} color='#0000FF' />
+                            <KeyButton handlePress={toggleCamera} n={<Feather name="camera" size={24} color="black" />} color='#FF0000' />
+                            <KeyButton handlePress={pickImage} n={<Feather name="image" size={24} color="black" />}/>
                             <KeyButton handlePress={handlePress} n={'^'} color='#0000FF' />
+                            <KeyButton handlePress={handleAc} n={'C'} color='#0000FF' />                          
                         </View>
                         <View style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: 'row' }}>
                             <KeyButton handlePress={handlePress} n={'('} color='#0000FF' />
@@ -199,13 +214,13 @@ export default function App() {
                             <KeyButton handlePress={handlePress} n={'%'} color='#0000FF' />
                             <KeyButton handlePress={handlePress} n={'/'} color='#0000FF' />
                         </View>
-                        <View style={{  width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: 'row' }}>
+                        <View style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: 'row' }}>
                             <KeyButton handlePress={handlePress} n={'7'} />
                             <KeyButton handlePress={handlePress} n={'8'} />
                             <KeyButton handlePress={handlePress} n={'9'} />
                             <KeyButton handlePress={handlePress} n={'*'} color='#0000FF' />
                         </View>
-                        <View style={{  width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: 'row' }}>
+                        <View style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: 'row' }}>
                             <KeyButton handlePress={handlePress} n={'4'} />
                             <KeyButton handlePress={handlePress} n={'5'} />
                             <KeyButton handlePress={handlePress} n={'6'} />
@@ -217,7 +232,7 @@ export default function App() {
                             <KeyButton handlePress={handlePress} n={'3'} />
                             <KeyButton handlePress={handlePress} n={'+'} color='#0000FF' />
                         </View>
-                        <View style={{  width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: 'row' }}>
+                        <View style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: 'row' }}>
                             <KeyButton handlePress={handlePress} n={'.'} />
                             <KeyButton handlePress={handlePress} n={'0'} />
                             <KeyButton handlePress={handleRemove} n={<FontAwesome5 name="backspace" size={18} color="#0000FF" />} color='#48cae4' />
