@@ -131,7 +131,12 @@ export default function App() {
     return (
         <View style={[styles.container]}>
             {
-                isCameraOpen ? <ExpoCamera setIsCameraOpen={setIsCameraOpen}></ExpoCamera> :
+                isCameraOpen ? <ExpoCamera
+                    setIsCameraOpen={setIsCameraOpen}
+                    setInput={setInput}
+                    setResult={setResult}>
+
+                </ExpoCamera> :
                     <View style={{ justifyContent: 'flex-end', flex: 1, flexDirection: 'column', marginTop: DeviceStatusBar.currentHeight || 0 }}>
                         <View style={{ paddingHorizontal: 20, flex: 1, justifyContent: 'center' }}>
                             <TextInput

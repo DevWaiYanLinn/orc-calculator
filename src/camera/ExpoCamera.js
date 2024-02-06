@@ -6,7 +6,28 @@ import { Alert, Button, View, TouchableOpacity, Text, useWindowDimensions, Statu
 import styles from '../styles/styles';
 import { useRef, useState } from 'react';
 
-const ExpoCamera = function ({ setIsCameraOpen }) {
+const calculate = function (text) {
+    try {
+        if (text) {
+            text = text.replace(/\^/g, '**')
+            text = text.replace(/√(\d+)/g, (match, number) => {
+                return `Math.sqrt(${number})`;
+            })
+            const check = ['+', '-', '*', '/', '%'].includes(text.charAt(text.length - 1))
+            if (check) {
+                text = text.slice(0, -1)
+            }
+            const sum = new Function(`return ${text}`)
+            return sum()
+        } else {
+            return ''
+        }
+    } catch {
+       return 'Error'
+    }
+}
+
+const ExpoCamera = function ({ setIsCameraOpen, setInput, setResult }) {
     const { width } = useWindowDimensions();
     const height = Math.round((width * 4) / 3)
     const cameraRef = useRef(null);
@@ -57,8 +78,59 @@ const ExpoCamera = function ({ setIsCameraOpen }) {
                 }
                 await cameraRef.current.pausePreview()
                 const result = await manipulateAsync(photo.uri, [{ crop: adjustCrop }], [{ format: SaveFormat.PNG }]);
+                const formData = new FormData();
+                formData.append('file', {
+                    uri: result.uri,
+                    name: 'photo.jpg',
+                    type: 'image/jpg',
+                })
+
                 await MediaLibrary.createAssetAsync(result.uri)
+
+                const response = await fetch('http://192.168.99.139:5000/api/photo-upload', {
+                    method: "POST",
+                    body: formData,
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        'Access': 'application/json'
+                    },
+                })
+                const res = await response.json()
                 await cameraRef.current.resumePreview()
+
+                if (!response.ok) {
+                    Alert.alert(
+                        'Error',
+                        `${'server error or we can not detect the image'}`,
+                        [
+                            {
+                                text: 'Cancel',
+                                style: 'cancel',
+                            },
+                        ],
+                        {
+                            cancelable: true,
+                        },
+                    );
+                } else {
+                    const result = calculate(res.join(''))
+                    Alert.alert(
+                        'Success',
+                        `${'Result is : ' + res.join('') + ' = ' +  result }`,
+                        [
+                            {
+                                text: 'Cancel',
+                                style: 'cancel',
+                            },
+                        ],
+                        {
+                            cancelable: true,
+                        },
+                    );
+                    setIsCameraOpen(false)
+                    setInput((prev) => ({ ...prev, value: res.join('') }))
+                    setResult(result)
+                }
             } catch (error) {
                 Alert.alert(
                     'Error',
@@ -78,7 +150,7 @@ const ExpoCamera = function ({ setIsCameraOpen }) {
     }
 
     return <View style={{ flex: 1, backgroundColor: 'black', marginTop: DeviceStatusBar.currentHeight || 0, }}>
-        <View style={{ paddingHorizontal: 30, paddingVertical:20, justifyContent: 'space-between', alignItems: 'center', display: 'flex', flexDirection: 'row' }}>
+        <View style={{ paddingHorizontal: 30, paddingVertical: 20, justifyContent: 'space-between', alignItems: 'center', display: 'flex', flexDirection: 'row' }}>
             <AntDesign name="qrcode" size={28} color="white" />
             <TouchableOpacity onPress={() => {
                 setFlash((prev) => {
