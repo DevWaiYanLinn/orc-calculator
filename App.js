@@ -1,10 +1,12 @@
+import * as MediaLibrary from 'expo-media-library';
+import * as ImagePicker from 'expo-image-picker';
 import { StatusBar } from 'expo-status-bar';
-import { Text, View, TouchableOpacity, TextInput, AppState, StatusBar as DeviceStatusBar } from 'react-native';
+import { Text, View, TouchableOpacity, TextInput, AppState, StatusBar as DeviceStatusBar, Keyboard, Pressable } from 'react-native';
 import { Feather, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useRef, useState, useCallback, memo, useEffect } from 'react';
-import * as ImagePicker from 'expo-image-picker';
 import ExpoCamera from './src/camera/ExpoCamera';
 import styles from './src/styles/styles';
+import { calculate } from './src/utils/utility';
 
 
 const KeyButton = memo(function ({
@@ -26,18 +28,23 @@ export default function App() {
     const inputRef = useRef(null);
     const [isCameraOpen, setIsCameraOpen] = useState(false);
     const [input, setInput] = useState({ value: '', start: 0, end: 0 });
+    const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions();
 
     const pickImage = async () => {
-        let result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.All,
-            allowsEditing: true,
-            aspect: [4, 3],
-            quality: 1,
-        });
+        if (!mediaPermission?.granted) {
+            requestMediaPermission()
+        } else if (mediaPermission?.granted) {
+            let result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.All,
+                allowsEditing: true,
+                quality: 1,
+            });
 
-        if (!result.canceled) {
-            console.log(result.assets[0].uri)
+            if (!result.canceled) {
+                console.log(result.assets[0].uri)
+            }
         }
+
     }
 
     const handlePress = useCallback(function (val) {
@@ -56,9 +63,13 @@ export default function App() {
 
     const handleAppStateChange = (nextAppState) => {
         if (nextAppState === 'background') {
-            if (inputRef.current) {
-                inputRef.current.blur();
-            }
+            Keyboard.dismiss();
+        } else {
+            setTimeout(() => {
+                if(inputRef.current) {
+                    inputRef.current.focus()
+                }
+            }, 1000)
         }
     };
 
@@ -71,34 +82,11 @@ export default function App() {
         }
     }, []);
 
-    useEffect(() => {
-        if (inputRef.current) {
-            inputRef.current.focus()
-        }
-    }, [])
 
     const handleCalculate = useCallback(function () {
-        try {
-            let text = input.value
-            if (text) {
-                text = text.replace(/\^/g, '**')
-                text = text.replace(/√(\d+)/g, (match, number) => {
-                    return `Math.sqrt(${number})`;
-                })
-                const check = ['+', '-', '*', '/', '%'].includes(text.charAt(text.length - 1))
-                if (check) {
-                    text = text.slice(0, -1)
-                }
-                const sum = new Function(`return ${text}`)
-                setResult(sum())
-            } else {
-                setResult('')
-            }
-        } catch {
-            setResult('Error')
-        }
+        const result = calculate(input.value)
+        setResult(result)
     }, [input.value])
-
 
 
     const handleRemove = useCallback(function () {
@@ -140,13 +128,13 @@ export default function App() {
                     <View style={{ justifyContent: 'flex-end', flex: 1, flexDirection: 'column', marginTop: DeviceStatusBar.currentHeight || 0 }}>
                         <View style={{ paddingHorizontal: 20, flex: 1, justifyContent: 'center' }}>
                             <TextInput
+                                on
                                 ref={inputRef}
                                 autoFocus={true}
                                 showSoftInputOnFocus={false}
                                 selection={{ start: input.start, end: input.end }}
                                 onChangeText={handleInputChange}
                                 value={input.value}
-                                blurOnSubmit={true}
                                 onSelectionChange={onSelectionChange}
                                 style={{ color: 'black', fontSize: input.value.length > 10 ? 30 : 50, textAlign: 'right' }} />
                             <Text style={{ color: 'gray', fontSize: input.value.length || result.length > 10 ? 25 : 35, textAlign: 'right', marginTop: 20 }}>{result}</Text>
@@ -154,8 +142,8 @@ export default function App() {
                         <View style={{ paddingHorizontal: 10 }}>
                             <View style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: 'row' }}>
                                 <KeyButton handlePress={() => setIsCameraOpen(true)} n={<Feather name="camera" size={24} color={'white'} />} backgroundColor={'#ff5555'} />
-                                <KeyButton handlePress={handlePress} n={'√'} color={'#ff5555'} />
-                                {/* <KeyButton handlePress={pickImage} n={<Feather name="image" size={24} color="black" />} /> */}
+                                {/* <KeyButton handlePress={handlePress} n={'√'} color={'#ff5555'} /> */}
+                                <KeyButton handlePress={pickImage} n={<Feather name="image" size={24} color={'#ff5555'} />} />
                                 <KeyButton handlePress={handlePress} n={'^'} color={'#ff5555'} />
                                 <KeyButton handlePress={handleAc} n={'C'} color={'#ff5555'} />
                             </View>
@@ -192,8 +180,10 @@ export default function App() {
                         </View>
                     </View>
             }
+            <Pressable>
+                <View />
+            </Pressable>
             <StatusBar style='auto'></StatusBar>
         </View >
-
     );
 }

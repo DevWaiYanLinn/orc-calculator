@@ -1,31 +1,11 @@
-import * as MediaLibrary from 'expo-media-library';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { FontAwesome6, Entypo, AntDesign, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Camera, CameraType, FlashMode } from 'expo-camera';
-import { Alert, Button, View, TouchableOpacity, Text, useWindowDimensions, StatusBar as DeviceStatusBar } from 'react-native';
+import { Button, View, TouchableOpacity, Text, useWindowDimensions, StatusBar as DeviceStatusBar } from 'react-native';
 import styles from '../styles/styles';
 import { useRef, useState } from 'react';
-
-const calculate = function (text) {
-    try {
-        if (text) {
-            text = text.replace(/\^/g, '**')
-            text = text.replace(/√(\d+)/g, (match, number) => {
-                return `Math.sqrt(${number})`;
-            })
-            const check = ['+', '-', '*', '/', '%'].includes(text.charAt(text.length - 1))
-            if (check) {
-                text = text.slice(0, -1)
-            }
-            const sum = new Function(`return ${text}`)
-            return sum()
-        } else {
-            return ''
-        }
-    } catch {
-       return 'Error'
-    }
-}
+import { calculate } from '../utils/utility';
+import { AppAlert } from '../alert/Alert';
 
 const ExpoCamera = function ({ setIsCameraOpen, setInput, setResult }) {
     const { width } = useWindowDimensions();
@@ -33,7 +13,6 @@ const ExpoCamera = function ({ setIsCameraOpen, setInput, setResult }) {
     const cameraRef = useRef(null);
     const [type, setType] = useState(CameraType.back);
     const [cameraPermission, requestCameraPermission] = Camera.useCameraPermissions();
-    const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions();
     const [flash, setFlash] = useState(FlashMode.off)
     const viewFinderRef = useRef(null);
     const [crop, setCrop] = useState({})
@@ -42,17 +21,16 @@ const ExpoCamera = function ({ setIsCameraOpen, setInput, setResult }) {
         setType(current => (current === CameraType.back ? CameraType.front : CameraType.back));
     }
 
-    if (!cameraPermission || !mediaPermission) {
+    if (!cameraPermission) {
         return <View />;
     }
 
-    if (!cameraPermission?.granted || !mediaPermission?.granted) {
+    if (!cameraPermission?.granted) {
         return (
             <View style={[{ flex: 1, justifyContent: 'center', alignItems: 'center' }, { marginTop: DeviceStatusBar.currentHeight || 0 }]}>
                 <Text style={{ textAlign: 'center', marginBottom: 10 }}>We need your permission to show the camera</Text>
                 <Button onPress={() => {
                     requestCameraPermission()
-                    requestMediaPermission()
                 }} title="grant permission" />
             </View>
         );
@@ -76,75 +54,49 @@ const ExpoCamera = function ({ setIsCameraOpen, setInput, setResult }) {
                     height: adjustHeight,
                     width: adjustWidth,
                 }
+
                 await cameraRef.current.pausePreview()
                 const result = await manipulateAsync(photo.uri, [{ crop: adjustCrop }], [{ format: SaveFormat.PNG }]);
                 const formData = new FormData();
                 formData.append('file', {
                     uri: result.uri,
-                    name: 'photo.jpg',
-                    type: 'image/jpg',
+                    type: 'image/png',
+                    name: 'photo.png',
                 })
 
-                await MediaLibrary.createAssetAsync(result.uri)
+                // await MediaLibrary.createAssetAsync(result.uri)
+                const abortController = new AbortController();
 
-                const response = await fetch('http://192.168.99.139:5000/api/photo-upload', {
-                    method: "POST",
+                setTimeout(() => {
+                    abortController.abort()
+                }, 1000 * 10 * 1)
+
+                const response = await fetch('https://waiyanlynn-flask-app-ocr.hf.space/api/photo-upload', {
+                    method: "post",
                     body: formData,
                     headers: {
                         'Content-Type': 'multipart/form-data',
-                        'Access': 'application/json'
+                        'Accept': 'application/json',
                     },
+
                 })
+
                 const res = await response.json()
-                await cameraRef.current.resumePreview()
 
                 if (!response.ok) {
-                    Alert.alert(
-                        'Error',
-                        `${'server error or we can not detect the image'}`,
-                        [
-                            {
-                                text: 'Cancel',
-                                style: 'cancel',
-                            },
-                        ],
-                        {
-                            cancelable: true,
-                        },
-                    );
+                    AppAlert({ title: 'Error', message: 'server error or we can not detect the image' })
                 } else {
-                    const result = calculate(res.join(''))
-                    Alert.alert(
-                        'Success',
-                        `${'Result is : ' + res.join('') + ' = ' +  result }`,
-                        [
-                            {
-                                text: 'Cancel',
-                                style: 'cancel',
-                            },
-                        ],
-                        {
-                            cancelable: true,
-                        },
-                    );
-                    setIsCameraOpen(false)
+                    const text = res.join('');
+                    const result = calculate(text)
+                    AppAlert({ title: 'Success', message: `${'Result is : ' + text + ' = ' + result}` })
                     setInput((prev) => ({ ...prev, value: res.join('') }))
                     setResult(result)
                 }
             } catch (error) {
-                Alert.alert(
-                    'Error',
-                    `${error || 'unknown error'}`,
-                    [
-                        {
-                            text: 'Cancel',
-                            style: 'cancel',
-                        },
-                    ],
-                    {
-                        cancelable: true,
-                    },
-                );
+                AppAlert({ title: 'Error', message: `${error || 'unknown error'}` })
+            } finally {
+                await cameraRef.current.resumePreview()
+                setIsCameraOpen(false)
             }
         }
     }
