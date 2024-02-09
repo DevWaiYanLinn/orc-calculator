@@ -1,9 +1,5 @@
 ## PicCalBot - Calculator app
 
-I would like to express my deep appreciation to Mr. [Thu Rain Soe]. His guidance has been invaluable in helping me understand programming, especially in JavaScript. I owe a lot of my knowledge and skills to his teachings.
-
-## Observation
-
 PicCalBot is a React Native app built with Expo. It provides functions for basic arithmetic operations, including addition (+), subtraction (-), multiplication (×), and division (÷). The app includes optical character recognition (OCR) for accurate input processing through the device's camera.
 
 ## Features
